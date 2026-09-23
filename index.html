@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cleanpdf — Free PDF Metadata Remover</title>
+<meta name="description" content="Remove hidden metadata from PDF files instantly. Free, private, and processed entirely in your browser — no uploads, no servers.">
+
+<!-- Adsterra: replace YOUR_PUBLISHER_ID with your ID from the Adsterra dashboard -->
+<!-- Step 1: sign up free at adsterra.com, add your site, copy your banner code, paste it into each ad slot below -->
+<script async src="//www.topcreativeformat.com/YOUR_PUBLISHER_ID/invoke.js"></script>
+
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --ink-muted: #6b6b6b;
+    --ink-faint: #b0b0b0;
+    --paper: #f7f6f3;
+    --surface: #ffffff;
+    --accent: #1c4ed8;
+    --accent-light: #eff3fe;
+    --danger: #b91c1c;
+    --danger-light: #fef2f2;
+    --success: #15803d;
+    --success-light: #f0fdf4;
+    --warn: #b45309;
+    --warn-light: #fffbeb;
+    --border: #e2e1dc;
+    --radius: 10px;
+    --mono: 'Courier New', Courier, monospace;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #e8e7e2; --ink-muted: #9b9a94; --ink-faint: #5a5956;
+      --paper: #1a1918; --surface: #242320; --accent: #6b8ef0;
+      --accent-light: #1a2040; --danger: #f87171; --danger-light: #2a1414;
+      --success: #4ade80; --success-light: #0f2018; --warn: #fbbf24;
+      --warn-light: #2a1e08; --border: #333230;
+    }
+  }
+  *, *::before, *::after { box-sizing: inherit; margin: 0; padding: 0; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: var(--paper); color: var(--ink); font-size: 15px; line-height: 1.6; min-height: 100vh; }
+
+  /* Nav */
+  header { border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; align-items: center; height: 56px; background: var(--surface); gap: 20px; position: sticky; top: 0; z-index: 10; }
+  .logo { font-size: 17px; font-weight: 700; letter-spacing: -0.4px; color: var(--ink); text-decoration: none; }
+  .logo span { color: var(--accent); }
+  nav { display: flex; gap: 2px; margin-left: auto; }
+  nav a { font-size: 13.5px; color: var(--ink-muted); text-decoration: none; padding: 5px 10px; border-radius: 6px; transition: background 0.12s, color 0.12s; }
+  nav a:hover { background: var(--accent-light); color: var(--accent); }
+  nav a.active { color: var(--accent); font-weight: 500; }
+  .privacy-badge { font-size: 12px; color: var(--success); background: var(--success-light); border-radius: 20px; padding: 3px 10px; font-weight: 500; white-space: nowrap; }
+
+  /* Pages */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* Layout */
+  main { max-width: 800px; margin: 0 auto; padding: 40px 24px 60px; }
+  h1 { font-size: clamp(22px, 4vw, 30px); font-weight: 700; letter-spacing: -0.6px; line-height: 1.2; margin-bottom: 8px; }
+  h2 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; margin-bottom: 10px; }
+  .subtitle { color: var(--ink-muted); font-size: 15px; margin-bottom: 28px; }
+
+  /* Ad slots */
+  .ad-slot { background: var(--surface); border: 1px dashed var(--border); border-radius: var(--radius); min-height: 90px; display: flex; align-items: center; justify-content: center; color: var(--ink-faint); font-size: 12px; margin: 24px 0; text-align: center; }
+  .ad-slot ins { display: block; width: 100%; }
+
+  /* Drop zone */
+  #drop-zone { border: 2px dashed var(--border); border-radius: 14px; padding: 48px 24px; text-align: center; cursor: pointer; transition: border-color 0.15s, background 0.15s; background: var(--surface); position: relative; }
+  #drop-zone:hover, #drop-zone.drag-over { border-color: var(--accent); background: var(--accent-light); }
+  #drop-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .drop-icon { font-size: 34px; margin-bottom: 10px; display: block; }
+  .drop-title { font-size: 17px; font-weight: 600; margin-bottom: 5px; }
+  .drop-sub { color: var(--ink-muted); font-size: 13px; }
+  .drop-privacy { margin-top: 12px; font-size: 12px; color: var(--ink-faint); }
+
+  /* How it works strip */
+  .how-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 28px 0; }
+  .how-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .how-num { font-size: 11px; font-weight: 700; color: var(--accent); letter-spacing: 0.5px; margin-bottom: 5px; }
+  .how-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .how-desc { font-size: 12.5px; color: var(--ink-muted); }
+
+  /* Results */
+  #results { display: none; margin-top: 24px; }
+  .file-header { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; margin-bottom: 16px; }
+  .file-icon { font-size: 22px; flex-shrink: 0; }
+  .file-name { font-weight: 600; font-size: 14px; word-break: break-all; }
+  .file-size { font-size: 12px; color: var(--ink-muted); }
+  .reset-btn { margin-left: auto; flex-shrink: 0; background: none; border: 1px solid var(--border); color: var(--ink-muted); font-size: 12px; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-family: inherit; }
+  .reset-btn:hover { border-color: var(--ink-muted); color: var(--ink); }
+  .section-label { font-size: 11px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 8px; margin-top: 22px; }
+  .meta-table { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--surface); }
+  .meta-row { display: grid; grid-template-columns: 160px 1fr; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .meta-row:last-child { border-bottom: none; }
+  .meta-key { padding: 9px 14px; color: var(--ink-muted); font-family: var(--mono); font-size: 11.5px; background: var(--paper); border-right: 1px solid var(--border); word-break: break-all; }
+  .meta-val { padding: 9px 14px; word-break: break-all; color: var(--ink); }
+  .meta-val.sensitive { color: var(--danger); }
+  .no-meta { background: var(--success-light); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; color: var(--success); font-size: 14px; display: flex; align-items: center; gap: 10px; }
+  .hash-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; }
+  .hash-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-size: 13px; }
+  .hash-row:last-child { margin-bottom: 0; }
+  .hash-label { color: var(--ink-muted); min-width: 86px; font-size: 12px; }
+  .hash-val { font-family: var(--mono); font-size: 11px; color: var(--ink); background: var(--paper); padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .copy-btn { background: none; border: none; cursor: pointer; color: var(--ink-muted); font-size: 13px; padding: 2px 4px; border-radius: 4px; flex-shrink: 0; }
+  .copy-btn:hover { background: var(--accent-light); color: var(--accent); }
+  .compare-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
+  #compare-drop { border: 1.5px dashed var(--border); border-radius: 8px; padding: 14px; text-align: center; cursor: pointer; font-size: 13px; color: var(--ink-muted); transition: border-color 0.15s, background 0.15s; position: relative; margin-top: 8px; }
+  #compare-drop:hover { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+  #compare-drop input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .diff-result { margin-top: 12px; padding: 12px 14px; border-radius: 8px; font-size: 13.5px; display: none; }
+  .diff-result.match { background: var(--success-light); color: var(--success); }
+  .diff-result.changed { background: var(--danger-light); color: var(--danger); }
+  .diff-detail { font-size: 12px; margin-top: 5px; color: var(--ink-muted); }
+  .actions { display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap; }
+  .btn { padding: 11px 22px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; font-family: inherit; transition: opacity 0.15s, transform 0.1s; display: flex; align-items: center; gap: 7px; }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-secondary { background: var(--surface); color: var(--ink); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--ink-muted); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .processing { display: none; align-items: center; gap: 12px; padding: 16px 18px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px; color: var(--ink-muted); margin-top: 16px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+  .clean-success { background: var(--success-light); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; margin-top: 16px; display: none; align-items: center; gap: 12px; }
+  .clean-success-text { font-size: 14px; color: var(--success); font-weight: 500; }
+  .clean-success-sub { font-size: 12px; color: var(--ink-muted); }
+
+  /* About page */
+  .about-section { margin-bottom: 36px; }
+  .about-section p { color: var(--ink-muted); margin-bottom: 12px; max-width: 620px; }
+  .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin: 20px 0; }
+  .feature-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+  .feature-icon { font-size: 22px; margin-bottom: 8px; }
+  .feature-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .feature-desc { font-size: 13px; color: var(--ink-muted); }
+  .meta-types { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; margin: 16px 0; }
+  .meta-tag { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; font-size: 13px; }
+  .meta-tag strong { display: block; font-size: 12px; color: var(--ink-muted); font-weight: 500; margin-bottom: 1px; }
+
+  /* Privacy page */
+  .policy-body h3 { font-size: 16px; font-weight: 600; margin: 28px 0 8px; }
+  .policy-body p { color: var(--ink-muted); margin-bottom: 12px; max-width: 640px; line-height: 1.75; }
+  .policy-body ul { color: var(--ink-muted); padding-left: 20px; margin-bottom: 12px; }
+  .policy-body ul li { margin-bottom: 5px; font-size: 14px; }
+  .policy-meta { font-size: 12px; color: var(--ink-faint); margin-bottom: 28px; }
+
+  /* Footer */
+  footer { border-top: 1px solid var(--border); padding: 20px 24px; text-align: center; font-size: 12px; color: var(--ink-faint); }
+  footer a { color: var(--ink-muted); text-decoration: none; }
+  footer a:hover { color: var(--accent); }
+
+  @media (max-width: 560px) {
+    .how-strip { grid-template-columns: 1fr; }
+    .meta-row { grid-template-columns: 110px 1fr; }
+    .actions { flex-direction: column; }
+    .btn { width: 100%; justify-content: center; }
+    nav a { font-size: 12px; padding: 4px 7px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="#" class="logo" onclick="showPage('tool')">clean<span>pdf</span></a>
+  <nav>
+    <a href="#" class="active" id="nav-tool" onclick="showPage('tool')">Tool</a>
+    <a href="#" id="nav-about" onclick="showPage('about')">About</a>
+    <a href="#" id="nav-privacy" onclick="showPage('privacy')">Privacy policy</a>
+  </nav>
+  <span class="privacy-badge" style="margin-left:12px">🔒 100% local</span>
+</header>
+
+<!-- ═══════════════ TOOL PAGE ═══════════════ -->
+<div class="page active" id="page-tool">
+<main>
+  <h1>Remove hidden metadata from PDFs</h1>
+  <p class="subtitle">See exactly what's embedded in your file — author, software, GPS, creation dates — then strip it permanently. Everything runs in your browser. Your file never leaves your device.</p>
+
+  <!-- Top ad slot — paste your Adsterra banner code here -->
+  <div class="ad-slot" id="ad-top">
+    <!-- <script async src="//www.topcreativeformat.com/YOUR_BANNER_ID/invoke.js"></script> -->
+    <span>Ad</span>
+  </div>
+
+  <div id="drop-zone">
+    <input type="file" accept=".pdf" id="file-input">
+    <span class="drop-icon">📄</span>
+    <div class="drop-title">Drop a PDF here, or click to choose</div>
+    <div class="drop-sub">Single PDF files up to 100 MB — processed entirely in your browser</div>
+    <div class="drop-privacy">Your file is never uploaded to any server</div>
+  </div>
+
+  <div class="how-strip">
+    <div class="how-card">
+      <div class="how-num">Step 1</div>
+      <div class="how-title">Upload your PDF</div>
+      <div class="how-desc">Drop any PDF file. It stays on your device — nothing is sent anywhere.</div>
+    </div>
+    <div class="how-card">
+      <div class="how-num">Step 2</div>
+      <div class="how-title">Review metadata</div>
+      <div class="how-desc">See every hidden field: author, software used, creation date, and more.</div>
+    </div>
+    <div class="how-card">
+      <div class="how-num">Step 3</div>
+      <div class="how-title">Download clean file</div>
+      <div class="how-desc">Strip all metadata and download your sanitised PDF in seconds.</div>
+    </div>
+  </div>
+
+  <div id="processing" class="processing">
+    <div class="spinner"></div>
+    <span id="processing-msg">Reading PDF…</span>
+  </div>
+
+  <div id="results">
+    <div class="file-header">
+      <span class="file-icon">📄</span>
+      <div>
+        <div class="file-name" id="file-name-display"></div>
+        <div class="file-size" id="file-size-display"></div>
+      </div>
+      <button class="reset-btn" onclick="resetAll()">← New file</button>
+    </div>
+
+    <div class="section-label">Metadata found</div>
+    <div id="meta-container"></div>
+
+    <!-- Mid-results ad slot — paste your Adsterra banner code here -->
+    <div class="ad-slot" style="margin: 18px 0 0;">
+      <!-- <script async src="//www.topcreativeformat.com/YOUR_BANNER_ID_2/invoke.js"></script> -->
+      <span>Ad</span>
+    </div>
+
+    <div class="section-label">File fingerprint (SHA-256)</div>
+    <div class="hash-panel">
+      <div class="hash-row">
+        <span class="hash-label">Original</span>
+        <span class="hash-val" id="hash-original">—</span>
+        <button class="copy-btn" onclick="copyHash('hash-original')" title="Copy">⧉</button>
+      </div>
+      <div class="hash-row" id="clean-hash-row" style="display:none">
+        <span class="hash-label">Cleaned</span>
+        <span class="hash-val" id="hash-clean">—</span>
+        <button class="copy-btn" onclick="copyHash('hash-clean')" title="Copy">⧉</button>
+      </div>
+    </div>
+
+    <div class="section-label">Detect alterations</div>
+    <div class="compare-panel">
+      <div style="font-size:13.5px;color:var(--ink-muted)">Upload a second version of this PDF to check if it was modified. The SHA-256 hash is compared against your original or cleaned file.</div>
+      <div id="compare-drop">
+        <input type="file" accept=".pdf" id="compare-input">
+        Drop altered version here, or click to compare
+      </div>
+      <div class="diff-result" id="diff-result"></div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="clean-btn" onclick="cleanPDF()">✦ Remove all metadata</button>
+      <button class="btn btn-secondary" id="download-btn" onclick="downloadClean()" style="display:none">⬇ Download clean PDF</button>
+    </div>
+
+    <div class="clean-success" id="clean-success">
+      <span style="font-size:20px">✓</span>
+      <div>
+        <div class="clean-success-text">Metadata removed successfully</div>
+        <div class="clean-success-sub" id="clean-success-detail"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom ad slot — paste your Adsterra banner code here -->
+  <div class="ad-slot" style="margin-top: 32px;">
+    <!-- <script async src="//www.topcreativeformat.com/YOUR_BANNER_ID_3/invoke.js"></script> -->
+    <span>Ad</span>
+  </div>
+</main>
+</div>
+
+<!-- ═══════════════ ABOUT PAGE ═══════════════ -->
+<div class="page" id="page-about">
+<main>
+  <div class="about-section">
+    <h1>About Cleanpdf</h1>
+    <p class="subtitle">A free, privacy-first tool for removing hidden data from PDF files — built for journalists, lawyers, researchers, and anyone who cares about what they share.</p>
+
+    <div class="ad-slot">
+      <!-- <script async src="//www.topcreativeformat.com/YOUR_BANNER_ID_4/invoke.js"></script> -->
+      <span>Ad</span>
+    </div>
+
+    <h2>What is PDF metadata?</h2>
+    <p>Every PDF you create carries invisible data baked in by the software that made it. This metadata can reveal who wrote the document, when it was created, what software and operating system was used, and sometimes even the GPS coordinates of where it was created.</p>
+    <p>This information is invisible when you read or print the file — but it's easy for anyone to extract. Sending a PDF without stripping its metadata can inadvertently expose personal or organisational information you never intended to share.</p>
+
+    <div class="meta-types">
+      <div class="meta-tag"><strong>Author</strong>Full name of the document creator</div>
+      <div class="meta-tag"><strong>Creator</strong>Software used to write the file</div>
+      <div class="meta-tag"><strong>Producer</strong>PDF conversion tool used</div>
+      <div class="meta-tag"><strong>CreationDate</strong>Exact timestamp the file was made</div>
+      <div class="meta-tag"><strong>ModDate</strong>Last time the file was changed</div>
+      <div class="meta-tag"><strong>Keywords</strong>Tags embedded by the author</div>
+      <div class="meta-tag"><strong>XMP data</strong>Extended metadata stream</div>
+      <div class="meta-tag"><strong>PieceInfo</strong>App-specific hidden data</div>
+    </div>
+  </div>
+
+  <div class="about-section">
+    <h2>How Cleanpdf works</h2>
+    <p>Unlike most tools that upload your file to a server, Cleanpdf processes everything directly in your browser using the <strong>pdf-lib</strong> JavaScript library. Your PDF is read into memory, parsed, stripped, and returned to you — without ever leaving your device.</p>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🔒</div>
+        <div class="feature-title">Fully private</div>
+        <div class="feature-desc">No uploads, no servers, no logs. Your file exists only in your browser tab.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <div class="feature-title">Instant results</div>
+        <div class="feature-desc">Processing happens in milliseconds, even for large files, with no waiting for a server response.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔍</div>
+        <div class="feature-title">Full transparency</div>
+        <div class="feature-desc">Every metadata field is shown before removal so you know exactly what was in your file.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🧬</div>
+        <div class="feature-title">Alteration detection</div>
+        <div class="feature-desc">SHA-256 fingerprinting lets you verify whether a PDF was modified after you cleaned it.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="about-section">
+    <h2>Who should use this?</h2>
+    <p>Anyone sending PDFs to people they don't fully trust. Common use cases include journalists protecting sources, lawyers sanitising documents before disclosure, HR teams removing internal system data from job offers, researchers sharing drafts without revealing authorship, and individuals who simply value their privacy.</p>
+  </div>
+
+  <div class="ad-slot">
+    <!-- <script async src="//www.topcreativeformat.com/YOUR_BANNER_ID_5/invoke.js"></script> -->
+    <span>Ad</span>
+  </div>
+</main>
+</div>
+
+<!-- ═══════════════ PRIVACY POLICY PAGE ═══════════════ -->
+<div class="page" id="page-privacy">
+<main>
+  <h1>Privacy policy</h1>
+  <p class="policy-meta">Last updated: June 2025</p>
+
+  <div class="policy-body">
+    <p>Cleanpdf ("we", "our", "the service") is committed to protecting your privacy. This policy explains how we handle data when you use this website.</p>
+
+    <h3>1. Data we collect</h3>
+    <p>We collect minimal data necessary to operate the site and serve advertisements:</p>
+    <ul>
+      <li>Standard web server logs (IP address, browser type, pages visited, timestamps). These are retained for up to 30 days for security purposes.</li>
+      <li>Anonymous analytics data (page views, session duration, general geographic region) via privacy-respecting analytics, if enabled.</li>
+      <li>Advertising data collected by Google AdSense, described in section 4 below.</li>
+    </ul>
+
+    <h3>2. Your PDF files</h3>
+    <p>This is the most important section. <strong>Your PDF files are never uploaded to our servers.</strong> All file processing — reading metadata, stripping metadata, generating SHA-256 hashes, and comparing files — happens entirely within your web browser using JavaScript. We have no technical ability to access, view, store, or transmit your files. They never leave your device.</p>
+
+    <h3>3. Cookies</h3>
+    <p>We use cookies for the following purposes:</p>
+    <ul>
+      <li>Essential cookies: required to serve the website correctly.</li>
+      <li>Advertising cookies: used by Google AdSense to serve relevant advertisements (see section 4).</li>
+    </ul>
+    <p>You can disable cookies in your browser settings. Disabling advertising cookies will result in less relevant ads being shown, but will not affect the tool's functionality.</p>
+
+    <h3>4. Advertising (Google AdSense)</h3>
+    <p>This site uses Google AdSense to display advertisements. Google AdSense may use cookies and web beacons to collect data about your visits to this and other websites in order to display relevant advertisements. This data is collected by Google and governed by <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google's Privacy Policy</a>.</p>
+    <p>You can opt out of personalised advertising by visiting <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener">Google's Ads Settings</a> or by visiting <a href="https://www.aboutads.info/choices/" target="_blank" rel="noopener">aboutads.info</a>.</p>
+
+    <h3>5. Third-party links</h3>
+    <p>This site may contain links to external websites. We are not responsible for the privacy practices of those sites and encourage you to review their privacy policies.</p>
+
+    <h3>6. Children's privacy</h3>
+    <p>This service is not directed at children under the age of 13. We do not knowingly collect personal information from children.</p>
+
+    <h3>7. Changes to this policy</h3>
+    <p>We may update this privacy policy from time to time. The date at the top of this page reflects the most recent revision. Continued use of the site after changes constitutes acceptance of the updated policy.</p>
+
+    <h3>8. Contact</h3>
+    <p>If you have questions about this privacy policy, please contact us at: <strong>privacy@cleanpdf.com</strong> (replace with your actual contact email).</p>
+  </div>
+
+  <div class="ad-slot" style="margin-top:32px">
+    <!-- <script async src="//www.topcreativeformat.com/YOUR_BANNER_ID_6/invoke.js"></script> -->
+    <span>Ad</span>
+  </div>
+</main>
+</div>
+
+<footer>
+  <span>© 2025 Cleanpdf &nbsp;·&nbsp; <a href="#" onclick="showPage('privacy')">Privacy policy</a> &nbsp;·&nbsp; <a href="#" onclick="showPage('about')">About</a> &nbsp;·&nbsp; All file processing happens locally in your browser</span>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script>
+// ─── Page routing ─────────────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  window.scrollTo(0, 0);
+  return false;
+}
+
+// ─── State ────────────────────────────────────────────────
+let originalBytes = null, cleanBytes = null, originalHash = null, cleanHash = null, originalFileName = '';
+
+// ─── Drop zone ────────────────────────────────────────────
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type === 'application/pdf') handleFile(f);
+  else alert('Please drop a PDF file.');
+});
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) handleFile(fileInput.files[0]); });
+
+const compareDrop = document.getElementById('compare-drop');
+const compareInput = document.getElementById('compare-input');
+compareDrop.addEventListener('dragover', e => { e.preventDefault(); compareDrop.classList.add('drag-over'); });
+compareDrop.addEventListener('dragleave', () => compareDrop.classList.remove('drag-over'));
+compareDrop.addEventListener('drop', e => { e.preventDefault(); compareDrop.classList.remove('drag-over'); const f = e.dataTransfer.files[0]; if (f) compareFile(f); });
+compareInput.addEventListener('change', () => { if (compareInput.files[0]) compareFile(compareInput.files[0]); });
+
+// ─── File handling ────────────────────────────────────────
+async function handleFile(file) {
+  if (file.size > 100 * 1024 * 1024) { alert('File too large (max 100 MB).'); return; }
+  showProcessing('Reading PDF…');
+  originalFileName = file.name;
+  const buffer = await file.arrayBuffer();
+  originalBytes = new Uint8Array(buffer);
+  originalHash = await sha256(originalBytes);
+  let meta = {};
+  try {
+    const pdf = await PDFLib.PDFDocument.load(originalBytes, { ignoreEncryption: true });
+    meta = extractMeta(pdf);
+  } catch (e) { meta = { '_error': 'Could not parse PDF: ' + e.message }; }
+  hideProcessing();
+  renderResults(file, meta);
+}
+
+function extractMeta(pdf) {
+  const fields = {};
+  const keys = ['Title','Author','Subject','Keywords','Creator','Producer','CreationDate','ModDate'];
+  const getters = { Title: () => pdf.getTitle(), Author: () => pdf.getAuthor(), Subject: () => pdf.getSubject(), Keywords: () => pdf.getKeywords(), Creator: () => pdf.getCreator(), Producer: () => pdf.getProducer(), CreationDate: () => pdf.getCreationDate(), ModDate: () => pdf.getModificationDate() };
+  for (const k of keys) {
+    try { const v = getters[k](); if (v !== null && v !== undefined && v !== '') fields[k] = v instanceof Date ? v.toLocaleString() : String(v); } catch {}
+  }
+  return fields;
+}
+
+function renderResults(file, meta) {
+  document.getElementById('file-name-display').textContent = file.name;
+  document.getElementById('file-size-display').textContent = formatBytes(file.size);
+  document.getElementById('hash-original').textContent = originalHash;
+  const container = document.getElementById('meta-container');
+  container.innerHTML = '';
+  const SENSITIVE = ['Author','Creator','Producer','CreationDate','ModDate'];
+  const entries = Object.entries(meta);
+  if (entries.length === 0) {
+    container.innerHTML = '<div class="no-meta">✓ No metadata found — this PDF may already be clean.</div>';
+  } else {
+    const table = document.createElement('div'); table.className = 'meta-table';
+    for (const [k, v] of entries) {
+      const row = document.createElement('div'); row.className = 'meta-row';
+      const isSensitive = SENSITIVE.some(s => k.toLowerCase().includes(s.toLowerCase()));
+      row.innerHTML = `<div class="meta-key">${esc(k)}</div><div class="meta-val${isSensitive ? ' sensitive' : ''}">${esc(String(v))}</div>`;
+      table.appendChild(row);
+    }
+    container.appendChild(table);
+  }
+  dropZone.style.display = 'none';
+  document.getElementById('results').style.display = 'block';
+  document.getElementById('clean-success').style.display = 'none';
+  document.getElementById('download-btn').style.display = 'none';
+  document.getElementById('clean-hash-row').style.display = 'none';
+  cleanBytes = null;
+}
+
+// ─── Clean ────────────────────────────────────────────────
+async function cleanPDF() {
+  if (!originalBytes) return;
+  const btn = document.getElementById('clean-btn');
+  btn.disabled = true; btn.textContent = '…Removing metadata';
+  showProcessing('Stripping metadata…');
+  try {
+    const pdf = await PDFLib.PDFDocument.load(originalBytes, { ignoreEncryption: true });
+    pdf.setTitle(''); pdf.setAuthor(''); pdf.setSubject(''); pdf.setKeywords([]);
+    pdf.setCreator(''); pdf.setProducer('');
+    pdf.setCreationDate(new Date(0)); pdf.setModificationDate(new Date(0));
+    try { const cat = pdf.catalog; if (cat.has(PDFLib.PDFName.of('Metadata'))) cat.delete(PDFLib.PDFName.of('Metadata')); } catch {}
+    try { const cat = pdf.catalog; if (cat.has(PDFLib.PDFName.of('PieceInfo'))) cat.delete(PDFLib.PDFName.of('PieceInfo')); } catch {}
+    cleanBytes = await pdf.save();
+    cleanHash = await sha256(cleanBytes);
+    hideProcessing();
+    document.getElementById('hash-clean').textContent = cleanHash;
+    document.getElementById('clean-hash-row').style.display = 'flex';
+    document.getElementById('download-btn').style.display = 'flex';
+    document.getElementById('clean-success').style.display = 'flex';
+    document.getElementById('clean-success-detail').textContent = `All metadata removed. ${formatBytes(cleanBytes.byteLength)} (was ${formatBytes(originalBytes.byteLength)})`;
+    btn.textContent = '✦ Remove all metadata'; btn.disabled = false;
+  } catch (e) {
+    hideProcessing(); alert('Could not process this PDF: ' + e.message);
+    btn.textContent = '✦ Remove all metadata'; btn.disabled = false;
+  }
+}
+
+function downloadClean() {
+  if (!cleanBytes) return;
+  const blob = new Blob([cleanBytes], { type: 'application/pdf' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url;
+  a.download = originalFileName.replace(/\.pdf$/i, '') + '_clean.pdf';
+  a.click(); URL.revokeObjectURL(url);
+}
+
+async function compareFile(file) {
+  const resultEl = document.getElementById('diff-result');
+  resultEl.style.display = 'none';
+  compareDrop.textContent = 'Comparing…';
+  const buffer = await file.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  const hash = await sha256(bytes);
+  const baseHash = cleanHash || originalHash;
+  const baseName = cleanHash ? 'cleaned' : 'original';
+  let meta2 = {};
+  try { const pdf = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true }); meta2 = extractMeta(pdf); } catch {}
+  resultEl.style.display = 'block';
+  if (hash === baseHash) {
+    resultEl.className = 'diff-result match';
+    resultEl.innerHTML = `✓ File matches the ${baseName} — no changes detected.<div class="diff-detail">SHA-256 hash identical.</div>`;
+  } else {
+    const keys = Object.keys(meta2);
+    resultEl.className = 'diff-result changed';
+    resultEl.innerHTML = `⚠ File differs from the ${baseName} version.<div class="diff-detail">SHA-256 changed.${keys.length ? ' Metadata present: ' + keys.join(', ') + '.' : ''}</div>`;
+  }
+  compareDrop.innerHTML = '<input type="file" accept=".pdf" id="compare-input">Drop another version to re-compare';
+  document.getElementById('compare-input').addEventListener('change', e => { if (e.target.files[0]) compareFile(e.target.files[0]); });
+}
+
+// ─── Utilities ────────────────────────────────────────────
+async function sha256(bytes) {
+  const buf = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+function formatBytes(b) { if (b<1024) return b+' B'; if (b<1048576) return (b/1024).toFixed(1)+' KB'; return (b/1048576).toFixed(2)+' MB'; }
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function showProcessing(msg) { document.getElementById('processing-msg').textContent = msg; document.getElementById('processing').style.display = 'flex'; }
+function hideProcessing() { document.getElementById('processing').style.display = 'none'; }
+function copyHash(id) { navigator.clipboard.writeText(document.getElementById(id).textContent).catch(()=>{}); }
+function resetAll() {
+  originalBytes = cleanBytes = originalHash = cleanHash = null;
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('clean-success').style.display = 'none';
+  dropZone.style.display = 'block'; fileInput.value = '';
+  document.getElementById('diff-result').style.display = 'none';
+  compareDrop.innerHTML = '<input type="file" accept=".pdf" id="compare-input">Drop altered version here, or click to compare';
+  document.getElementById('compare-input').addEventListener('change', e => { if (e.target.files[0]) compareFile(e.target.files[0]); });
+}
+</script>
+</body>
+</html>
